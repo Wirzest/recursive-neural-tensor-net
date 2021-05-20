@@ -28,7 +28,7 @@ trainloader = DataLoader(dataset, batch_size=BATCH_SIZE)
 valid_loader = DataLoader(validation)
 N = dataset.__len__()
 
-# Since Sentiment Tree have no support to be allocate on the GPU
+# Since Sentiment Tree have no support for GPU allocation
 # they can't be fed to the model using cuda device. Training is done
 # on the CPU with subset of the training set.
 
