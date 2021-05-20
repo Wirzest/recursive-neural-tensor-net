@@ -9,12 +9,6 @@ from torchtext.data.utils import get_tokenizer
 from collections import Counter
 import pickle
 
-TRAIN = 1
-TEST = 2
-DEV = 3
-
-_UNK = '<unk>'
-
 
 class SSTClient():
     def __init__(self, assets_dir="./assets/", sst_dir="./sst/"):
