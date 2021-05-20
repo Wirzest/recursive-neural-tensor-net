@@ -3,19 +3,18 @@
 import collections
 import torch
 import torch.nn as nn
-from torch.linalg import norm
+# from torch.linalg import norm
 # %%
 
 
 class RNTensorN(nn.Module):
-    def __init__(self, lexis_size, l2_factor, embed_size=100, num_classes=5):
+    def __init__(self, lexis_size, embed_size=100, num_classes=5):
         super(RNTensorN, self).__init__()
         self.embedding = nn.Embedding(int(lexis_size), embed_size)
         self.V = nn.Parameter(torch.randn(2 * embed_size, 2 * embed_size, embed_size))
         self.W = nn.Linear(2 * embed_size, embed_size, bias=True)
         self.Ws = nn.Linear(embed_size, num_classes, bias=True)
-        self.l2_factor = l2_factor
-        self.activation = torch.tanh
+        self.activation = nn.Softmax(dim=1)
         self.embed_size = embed_size
 
     def traverse(self, node):
@@ -55,12 +54,17 @@ class RNTensorN(nn.Module):
         loss_f = nn.CrossEntropyLoss(reduction='mean')
         loss_raw = loss_f(prediction, target)
 
+        """Not needed to calculate L2 penalty since
+        weight decay computation goes into the optimizer."""
+
+        """
         l2_embed = norm(self.embedding.weight, ord=2)
         l2_W = norm(self.W.weight, ord=2)
         l2_V = norm(self.V.view(2 * self.embed_size, -1), ord=2)
         l2_Ws = norm(self.Ws.weight, ord=2)
         l2_terms = (l2_W + l2_V + l2_Ws + l2_embed)
-        self.tree_loss = loss_raw + self.l2_factor * l2_terms
+        """
+        self.tree_loss = loss_raw  # + self.l2_factor * l2_terms
 
         mle = torch.argmax(prediction, dim=1)
         self.tree_accuracy = torch.sum((mle == target)) / len(target)

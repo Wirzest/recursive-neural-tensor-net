@@ -15,8 +15,8 @@ stoi = pickle.load(open('./assets/stoi.pkl', 'rb'))
 
 lexis_size = len(stoi)
 
-EPOCHES = 10
-BATCH_SIZE = 64
+EPOCHES = 20
+BATCH_SIZE = 128
 
 dataset = SSTDataset("./sst/small.txt", stoi)
 validation = SSTDataset("./sst/dev.txt", stoi)
@@ -30,14 +30,14 @@ N = dataset.__len__()
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-net = rntn.RNTensorN(lexis_size, 0.1)
+net = rntn.RNTensorN(lexis_size)
 
 optimizer = torch.optim.SGD(net.parameters(),
-                            lr=0.05, momentum=0.9, dampening=0.0)
+                            lr=0.05, momentum=0.9, dampening=0.0, weight_decay=0.1)
 
 for i in range(EPOCHES):
     print("Epoch %d/%d:" % (i+1, EPOCHES))
-    valid_acc = acc = running_loss = 0
+    valid_acc = acc = valid_loss = running_loss = 0
 
     for j, trees in enumerate(trainloader, 0):
         optimizer.zero_grad()
@@ -55,16 +55,23 @@ for i in range(EPOCHES):
         # clip_grad_norm_(net.parameters(), 5, norm_type=2.)
         optimizer.step()
 
-    for j, trees in enumerate(valid_loader, 0):
-        for tree in trees:
-            sentiment_tree = SentimentTree(tree, stoi, device)
-            logits = net(sentiment_tree.root)
-            lb = sentiment_tree.get_labels()
-            ground_truth = torch.tensor([lb])[0]
-            valid_acc += net.tree_accuracy.item()
+    with torch.no_grad():
+        for j, trees in enumerate(valid_loader, 0):
+            for tree in trees:
+                sentiment_tree = SentimentTree(tree, stoi, device)
+                logits = net(sentiment_tree.root)
+                lb = sentiment_tree.get_labels()
+                ground_truth = torch.tensor([lb])[0]
+                loss = net.get_loss(logits, ground_truth)
+                valid_acc += net.tree_accuracy.item()
+                valid_loss += loss.item()
 
     acc /= N
     running_loss /= N
     valid_acc /= validation.__len__()
-    print("Loss: %.6f, Training accuracy: %.6f, Validation accuracy: %.6f" % (running_loss, acc, valid_acc))
-    torch.save(net.state_dict(), "./assets/net_parameters_%d.pth" % i)
+    valid_loss /= validation.__len__()
+
+    print("Loss: %.6f, Training accuracy: %.6f, Validation Loss: %.6f, Validation accuracy: %.6f" %
+          (running_loss, acc, valid_loss, valid_acc))
+
+    torch.save(net.state_dict(), "./assets/batch_parameters/net_parameters_%d.pth" % i)

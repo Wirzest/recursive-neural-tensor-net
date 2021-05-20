@@ -1,6 +1,6 @@
 # %%
 import rntn
-from sentiment_tree import SentimentTree
+from sentiment_tensor import SentimentTree
 import pickle
 import torch
 
@@ -17,7 +17,7 @@ tree_raw = """(3 (2 It) (4 (4 (2 's)
 
 # %%
 t = SentimentTree(tree_raw, "./assets/stoi.pkl")
-net = rntn.RNTensorN(lexis_size, 2, 1e-5)
+net = rntn.RNTensorN(lexis_size)
 
 # %%
 logits = net(t)
