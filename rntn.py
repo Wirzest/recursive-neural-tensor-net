@@ -14,7 +14,8 @@ class RNTensorN(nn.Module):
         self.V = nn.Parameter(torch.randn(2 * embed_size, 2 * embed_size, embed_size))
         self.W = nn.Linear(2 * embed_size, embed_size, bias=True)
         self.Ws = nn.Linear(embed_size, num_classes, bias=True)
-        self.activation = nn.Softmax(dim=1)
+        self.activation = nn.Tanh()
+        self.classifier = nn.Softmax(dim=1)
         self.embed_size = embed_size
 
     def traverse(self, node):
@@ -47,7 +48,7 @@ class RNTensorN(nn.Module):
         nodes_ret = self.traverse(root)
         self.nodes_rep_matrix = torch.cat(list(nodes_ret.values()))
 
-        self.tree_logits = self.activation(self.Ws(self.nodes_rep_matrix))
+        self.tree_logits = self.classifier(self.Ws(self.nodes_rep_matrix))
         return self.tree_logits
 
     def get_loss(self, prediction, target):
@@ -64,9 +65,9 @@ class RNTensorN(nn.Module):
         l2_Ws = norm(self.Ws.weight, ord=2)
         l2_terms = (l2_W + l2_V + l2_Ws + l2_embed)
         """
-        self.tree_loss = loss_raw  # + self.l2_factor * l2_terms
+        tree_loss = loss_raw  # + self.l2_factor * l2_terms
 
         mle = torch.argmax(prediction, dim=1)
-        self.tree_accuracy = torch.sum((mle == target)) / len(target)
+        tree_accuracy = torch.sum((mle == target)) / len(target)
 
-        return self.tree_loss
+        return tree_loss, tree_accuracy
